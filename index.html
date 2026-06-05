@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="theme-color" content="#08090d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="乐嗨轮盘">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<title>乐嗨轮盘 v3 #1779997927</title>
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#08090d;--s1:#0f1118;--s2:#151820;--s3:#1c1f2a;--bd:#252836;
+  --gold:#d4a843;--red:#e05252;--r2:#ff7070;--blue:#3d7eff;--b2:#6699ff;
+  --green:#2eb87a;--g2:#45d492;--pur:#8b5cf6;--ora:#f07030;
+  --txt:#d8dae8;--dim:#5a5f7a;--dim2:#2a2d3a}
+html,body{background:var(--bg);color:var(--txt);font-family:system-ui,'PingFang SC','Microsoft YaHei',sans-serif;min-height:100%}
+
+/* INPUT */
+.inp-box{background:#1a1d28;padding:8px 12px;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:99}
+.inp-title{color:var(--gold);font-size:12px;font-weight:700;text-align:center;margin-bottom:6px}
+.tbl-bar{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;padding-bottom:2px;max-height:120px;overflow-y:auto}
+.tbl-bar::-webkit-scrollbar{display:none}
+.tbl-btn{padding:5px 12px;border-radius:13px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid var(--bd);background:var(--s3);color:var(--dim);text-align:center}
+.tbl-btn.on{background:var(--gold);color:#000;border-color:var(--gold)}
+.tbl-new-row{display:flex;gap:6px;margin-bottom:10px}
+.tbl-name-inp{flex:1;background:#fff;border:1px solid var(--bd);border-radius:7px;padding:6px 10px;font-size:12px;color:#000;outline:none}
+.btn-new-tbl{background:var(--s3);border:1px solid var(--gold);color:var(--gold);border-radius:7px;font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer}
+.btn-del-tbl{background:var(--s3);border:1px solid var(--bd);color:var(--dim);border-radius:7px;font-size:11px;padding:6px 10px;cursor:pointer}
+.inp-row{display:flex;gap:8px;margin-bottom:8px}
+.num-inp{flex:1;background:#fff;border:3px solid var(--gold);border-radius:10px;color:#000;font-size:32px;font-weight:700;padding:8px;text-align:center;outline:none;-webkit-appearance:none;appearance:none}
+.num-inp::-webkit-inner-spin-button{-webkit-appearance:none;appearance:none}
+.btn-add{background:var(--gold);color:#000;border:none;border-radius:10px;font-size:20px;font-weight:900;padding:8px 18px;cursor:pointer;min-width:70px}
+.batch-row{display:flex;gap:6px}
+.batch-inp{flex:1;background:#fff;border:2px solid var(--bd);border-radius:8px;color:#000;font-size:12px;padding:7px 10px;resize:none;outline:none;height:40px}
+.batch-inp:focus{border-color:var(--gold)}
+.btn-sm{background:var(--s3);border:1px solid var(--bd);color:var(--dim);border-radius:7px;font-size:11px;padding:0 10px;cursor:pointer}
+.btn-sm.gold{border-color:var(--gold);color:var(--gold)}
+
+/* STATS BAR */
+.stats{display:flex;justify-content:space-around;background:var(--s1);padding:8px 0;border-bottom:1px solid var(--bd)}
+.st{text-align:center}
+.st-v{font-size:15px;font-weight:700;font-family:'Courier New',monospace}
+.st-l{font-size:9px;color:var(--dim)}
+
+/* RECENT */
+.recent{background:var(--s1);padding:6px 8px;border-bottom:1px solid var(--bd);overflow-y:auto;max-height:160px}
+.recent::-webkit-scrollbar{display:none}
+.rl{font-size:9px;color:var(--dim);white-space:nowrap;flex-shrink:0}
+.rc{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.rc-r{background:var(--red);color:#fff}
+.rc-b{background:#1e2235;color:#888;border:1px solid var(--bd)}
+.rc-g{background:var(--green);color:#fff}
+.rc-new{box-shadow:0 0 0 2px var(--gold)}
+
+/* TABS */
+.tabs{display:flex;background:var(--s1);border-bottom:1px solid var(--bd);overflow-x:auto;position:sticky;top:0;z-index:50}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 12px;font-size:11px;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500;-webkit-tap-highlight-color:transparent}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* CONTENT */
+.content{padding:12px 14px}
+.pane{display:none}
+.pane.on{display:block}
+
+/* CARDS */
+.card-ex{background:linear-gradient(135deg,rgba(255,30,30,.18),rgba(255,150,0,.1));border:2px solid #ff4444;border-radius:12px;padding:13px;margin-bottom:11px}
+.card-st{background:linear-gradient(135deg,rgba(255,80,80,.1),rgba(212,168,67,.06));border:1px solid rgba(255,80,80,.5);border-radius:10px;padding:12px;margin-bottom:10px}
+.card-md{background:linear-gradient(135deg,rgba(212,168,67,.08),rgba(46,184,122,.05));border:1px solid rgba(212,168,67,.4);border-radius:9px;padding:11px;margin-bottom:9px}
+.card-al{background:linear-gradient(135deg,rgba(212,168,67,.08),rgba(139,92,246,.04));border:1px solid rgba(212,168,67,.4);border-radius:10px;padding:12px;margin-bottom:9px}
+.card-pe{background:var(--s2);border:1px solid var(--bd);border-left:3px solid var(--blue);border-radius:8px;padding:10px 12px;margin-bottom:7px}
+.card-info{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+
+/* TOP3 */
+.top3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.tc{background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:11px 7px;text-align:center;position:relative}
+.tc1{border-top:2px solid var(--gold);background:linear-gradient(160deg,rgba(212,168,67,.07),var(--s2))}
+.tc2{border-top:2px solid rgba(212,168,67,.45)}
+.tc3{border-top:2px solid rgba(212,168,67,.2)}
+.tc-rk{position:absolute;top:4px;left:6px;font-size:9px;color:var(--dim)}
+.tc-ball{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;margin:0 auto 5px}
+.tc-score{font-size:17px;font-weight:700;color:var(--gold);font-family:'Courier New',monospace}
+.tc-lbl{font-size:9px;color:var(--dim)}
+
+/* DIM GRID */
+.dim-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:11px}
+.dc{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:9px 10px}
+.dc-t{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.dc-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px}
+.dc-bg{height:4px;background:var(--dim2);border-radius:2px;margin-bottom:4px;overflow:hidden}
+.dc-fill{height:100%;border-radius:2px}
+
+/* TAGS */
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;white-space:nowrap}
+.tg{background:rgba(212,168,67,.15);color:var(--gold);border:1px solid rgba(212,168,67,.3)}
+.tr{background:rgba(224,82,82,.15);color:var(--r2);border:1px solid rgba(224,82,82,.3)}
+.tb{background:rgba(61,126,255,.15);color:var(--b2);border:1px solid rgba(61,126,255,.3)}
+.tgr{background:rgba(46,184,122,.15);color:var(--g2);border:1px solid rgba(46,184,122,.3)}
+.tdm{background:rgba(255,255,255,.04);color:var(--dim);border:1px solid var(--bd)}
+
+/* NUMBER CHIPS */
+.na{width:26px;height:26px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.nar{background:var(--red);color:#fff}
+.nab{background:#1e2235;color:#aaa;border:1px solid var(--bd)}
+.nag{background:var(--green);color:#fff}
+.na-hl{outline:2px solid var(--gold);outline-offset:2px}
+
+/* FREQ BAR */
+.fr{display:flex;align-items:center;gap:6px;padding:2px 0}
+.fr-n{width:20px;text-align:right;font-size:10px;font-weight:700;flex-shrink:0}
+.fr-bg{flex:1;background:var(--s3);border-radius:3px;height:13px;overflow:hidden}
+.fr-fill{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:4px}
+.fr-fill span{font-size:9px;color:rgba(255,255,255,.7)}
+.fr-c{width:22px;text-align:right;font-size:10px;color:var(--dim);flex-shrink:0}
+
+/* WHEEL */
+.wstrip{display:flex;gap:3px;overflow-x:auto;padding:3px 0 5px;margin-bottom:10px}
+.wstrip::-webkit-scrollbar{height:3px}
+.wn{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.wnr{background:var(--red);color:#fff}
+.wnb{background:#1e2235;color:#555;border:1px solid var(--bd)}
+.wng{background:var(--green);color:#fff}
+.wn-al{outline:2.5px solid var(--gold);outline-offset:2px}
+.wn-pe{outline:2px solid var(--blue);outline-offset:1px}
+
+.sec{font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin:13px 0 7px;font-family:'Courier New',monospace}
+.sec:first-child{margin-top:0}
+/* 下注盘 */
+@keyframes flash{0%,100%{opacity:1;box-shadow:0 0 8px #ff4444,0 0 16px #ff4444;}50%{opacity:.6;box-shadow:0 0 3px #ff4444;}}
+@keyframes goldglow{0%,100%{box-shadow:0 0 6px #d4a843;}50%{box-shadow:0 0 12px #d4a843,0 0 20px #d4a843;}}
+@keyframes blackflash{0%,100%{border-color:#ffffff;box-shadow:0 0 5px rgba(255,255,255,.5);}50%{border-color:#555;box-shadow:none;}}
+@keyframes goldflash{0%,100%{border-color:#d4a843;box-shadow:0 0 8px #d4a843,0 0 16px #d4a843;}50%{border-color:#a07820;box-shadow:0 0 3px #d4a843;}}
+.board-wrap{padding:8px 4px}
+.board-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.board-table td{border:1px solid #333;text-align:center;vertical-align:middle;cursor:pointer;font-weight:700;font-size:13px;transition:all .15s;-webkit-tap-highlight-color:transparent;position:relative}
+.board-table td:active{opacity:.7;transform:scale(.95)}
+.bd-0{background:#1a5c3a;color:#fff;font-size:15px}
+.bd-r{background:#c0392b;color:#fff}
+.bd-b{background:#1a1a2e;color:#ccc}
+.bd-side{background:#1a2a1a;color:#b8d4a8;font-size:10px;font-weight:600}
+.bd-dozen{background:#1a2035;color:#8ab4d4;font-size:10px;font-weight:600}
+.bd-rec{outline:3px solid var(--gold);outline-offset:-2px;z-index:1}
+.bd-rec::after{content:'★';position:absolute;top:-6px;right:-4px;font-size:10px;color:var(--gold);background:var(--bg);border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;line-height:14px}
+.bd-strong{outline:3px solid #ff4444;outline-offset:-2px}
+.bd-strong::after{content:'🔥';position:absolute;top:-8px;right:-6px;font-size:11px}
+.board-legend{display:flex;gap:8px;flex-wrap:wrap;margin:10px 4px;font-size:10px}
+.bl-item{display:flex;align-items:center;gap:4px;color:var(--dim)}
+.bl-box{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+/* 快速键盘 */
+.qkb{background:var(--s1);border-top:1px solid var(--bd);padding:10px 8px;display:none}
+.qkb.on{display:block}
+.qkb-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.qkb-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.qk{border:none;border-radius:7px;font-size:13px;font-weight:700;padding:9px 4px;cursor:pointer;transition:all .1s;-webkit-tap-highlight-color:transparent;font-family:system-ui}
+.qk:active{transform:scale(.93);opacity:.8}
+.qk-r{background:#c94444;color:#fff}
+.qk-b{background:#1e2a40;color:#aaa;border:1px solid var(--bd)}
+.qk-g{background:#2a7a55;color:#fff}
+.qk-del{background:var(--s3);color:var(--dim);border:1px solid var(--bd);font-size:16px}
+.qk-clr{background:var(--s3);color:var(--r2);border:1px solid rgba(224,82,82,.3);font-size:11px}
+.nodata{text-align:center;padding:36px 16px;color:var(--dim);font-size:13px;line-height:1.8}
+
+
+.alert-box{background:linear-gradient(135deg,#4a1a8b,#8a4fff);border-radius:12px;padding:16px;margin:12px;text-align:center;animation:pulse 1.2s infinite;border:2px solid #b87aff}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.75}}
+.rec-num{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;margin:4px;border-radius:8px;font-weight:800;font-size:15px;color:#fff;animation:purpleflash 1.2s infinite}
+@keyframes purpleflash{0%,100%{box-shadow:0 0 0 rgba(138,79,255,0)}50%{box-shadow:0 0 16px rgba(138,79,255,.95)}}
+.countdown{font-size:28px;font-weight:900;color:#fff}
+.flash{animation:flash 1s infinite}
+@keyframes flash{0%,100%{box-shadow:0 0 0 rgba(255,68,68,0)}50%{box-shadow:0 0 16px rgba(255,68,68,.9)}}
+</style>
+</head>
+<body>
+
+<div id="alert-zone"></div>
+
+<div class="inp-box">
+  <div class="inp-title" style="margin-bottom:6px">🎯 乐嗨轮盘 — <span id="cur-tbl-nm">盘1</span></div>
+  <div class="tbl-bar" id="tbl-bar"></div>
+  <div style="display:flex;gap:5px;margin-bottom:5px">
+    <input id="tbl-nm" placeholder="新盘名称" style="flex:1;min-width:0;padding:6px 9px;border-radius:7px;border:1px solid var(--bd);background:var(--s2);color:var(--txt);font-size:12px">
+    <button onclick="addTbl()" style="white-space:nowrap;padding:6px 11px;border:none;border-radius:7px;background:var(--gold);color:#000;font-weight:700;font-size:12px">+新盘</button>
+    <button onclick="delTbl()" style="white-space:nowrap;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:var(--dim);font-size:12px">删除</button>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <input id="si" type="tel" inputmode="numeric" placeholder="0~36" onkeydown="if(event.key==='Enter')addOne()" style="flex:1;padding:6px;border-radius:8px;border:2px solid var(--gold);background:#fff;color:#000;font-size:18px;font-weight:800;text-align:center">
+    <button onclick="addOne()" style="padding:6px 18px;border:none;border-radius:8px;background:var(--gold);color:#000;font-weight:900;font-size:18px">+</button>
+  </div>
+  <div style="display:flex;gap:5px;margin-top:5px">
+    <input id="bi" placeholder="批量粘贴: 5 12 0 33 ..." style="flex:1;min-width:0;padding:6px 9px;border-radius:7px;border:1px solid var(--bd);background:var(--s2);color:var(--txt);font-size:12px">
+    <button onclick="addBatch()" style="white-space:nowrap;padding:6px 11px;border:none;border-radius:7px;background:var(--blue);color:#fff;font-weight:700;font-size:12px">批量</button>
+    <button onclick="undoOne()" style="white-space:nowrap;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:var(--dim);font-size:12px">撤销</button>
+    <button onclick="clearAll()" style="white-space:nowrap;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:var(--r2);font-size:12px">清空</button>
+  </div>
+  <div style="display:flex;gap:5px;margin-top:5px">
+    <button onclick="exportData()" style="flex:1;white-space:nowrap;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:var(--g2);font-size:12px">⬇ 导出备份</button>
+    <button onclick="document.getElementById('import-file').click()" style="flex:1;white-space:nowrap;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:#b87aff;font-size:12px">⬆ 导入数据</button>
+    <input id="import-file" type="file" accept=".json,application/json" onchange="importData(this)" style="display:none">
+  </div>
+</div>
+
+<div style="padding:10px;background:var(--s1);border-radius:8px;margin:8px 12px">
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <button id="tab-wheel" onclick="switchBoard('wheel')" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--gold);color:#000;font-weight:700;font-size:13px;cursor:pointer">🎡 投注盘</button>
+    <button id="tab-flat" onclick="switchBoard('flat')" style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--bd);background:var(--s3);color:var(--dim);font-weight:700;font-size:13px;cursor:pointer">▦ 平面盘</button>
+  </div>
+  <div id="bet-board" style="min-height:160px;background:#0a0e14;border-radius:8px;padding:8px"></div>
+</div>
+
+<div id="recent-box" style="padding:12px;background:var(--s1);border-radius:8px;margin:12px"></div>
+
+<div style="padding:12px">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+    <div style="font-size:13px;font-weight:700;color:var(--gold)">🔁 历史回测</div>
+    <button onclick="runBT()" style="margin-left:auto;padding:6px 14px;border:none;border-radius:6px;background:#8a4fff;color:#fff;font-weight:700;font-size:12px">运行回测</button>
+  </div>
+  <div id="bt-result" style="background:var(--s2);border-radius:8px;padding:12px;font-size:12px;color:var(--txt);line-height:1.7;min-height:60px">
+    <span style="color:var(--dim)">点击"运行回测"，验证当前盘历史数据的命中率</span>
+  </div>
+</div>
+
+
+
+
+
+<div style="display:flex;justify-content:space-around;padding:14px;background:var(--s1);border-bottom:1px solid var(--bd)">
+  <div style="text-align:center"><div style="font-size:24px;font-weight:900;color:var(--gold)" id="s-total">0</div><div style="font-size:11px;color:var(--dim)">局数</div></div>
+  <div style="text-align:center"><div style="font-size:24px;font-weight:900;color:var(--green)" id="s-sig">0</div><div style="font-size:11px;color:var(--dim)">触发次数</div></div>
+  <div style="text-align:center"><div style="font-size:24px;font-weight:900;color:var(--b2)" id="s-rec">—</div><div style="font-size:11px;color:var(--dim)">推荐中</div></div>
+</div>
+
+<script>
+var WHL=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+var REDS=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+var TABLE=[[3,6,9,12,15,18,21,24,27,30,33,36],[2,5,8,11,14,17,20,23,26,29,32,35],[1,4,7,10,13,16,19,22,25,28,31,34]];
+
+// 平面围 = 标准桌布上同一横行的左右相邻号 (如 14 -> 11,17)
+function tableUD(n){
+  for(var ri=0;ri<3;ri++){
+    var c=TABLE[ri].indexOf(n);
+    if(c>=0){
+      var r=[];
+      if(c>0)r.push(TABLE[ri][c-1]);   // 左
+      if(c<11)r.push(TABLE[ri][c+1]);  // 右
+      return r;
+    }
+  }
+  return [];
+}
+function wnb(n,cnt){
+  var wi=WHL.indexOf(n),r=[],k=1;
+  while(r.length<cnt){
+    r.push(WHL[(wi+k)%37]);
+    if(r.length<cnt)r.push(WHL[(wi-k+37)%37]);
+    k++;
+  }
+  return r.slice(0,cnt);
+}
+// 一个号的"邻域" = 周边7(本号+左3+右3) + 平面围(上下)
+function neighborsOf(n){
+  var s=new Set(wnb(n,6)); // 左右各3,共6个
+  s.add(n);                // 加本号 => 周边7
+  tableUD(n).forEach(function(x){s.add(x);}); // 平面围上下
+  return s;
+}
+
+// 链式散号判定:从索引i开始往后看 len 局 (i..i+len-1)
+// 规则:每一局的号 都不在 上一局号 的邻域里, 且 这些号互不重复
+// 默认 len=5 (前5局铺垫). 触发判定时用 len=6 (连主号在内连续6局都散)
+function chainDispersed(arr,i,len){
+  if(len===undefined)len=5;
+  if(i+len-1>=arr.length)return false;
+  var seen=new Set();
+  seen.add(arr[i]);
+  for(var k=i+1;k<=i+len-1;k++){
+    var cur=arr[k];
+    var prev=arr[k-1];
+    // 1+2: 当前号不在上一局号的邻域(周边7+平面围)
+    if(neighborsOf(prev).has(cur))return false;
+    // 3: 不和前面已出现的号重复
+    if(seen.has(cur))return false;
+    seen.add(cur);
+  }
+  return true;
+}
+
+// 推荐覆盖组 = 主号(arr[i])周边7 + 主号平面围 + 过去5局开过的号, 去重
+function coverSet(arr,i){
+  var X=arr[i];
+  var s=new Set(wnb(X,6)); // 主号左右各3
+  s.add(X);                // 主号本身 => 周边7
+  tableUD(X).forEach(function(x){s.add(x);}); // 主号平面围
+  for(var j=Math.max(0,i-5);j<i;j++)s.add(arr[j]); // 过去5局(不含主号自己)
+  return [...s].sort(function(a,b){return a-b;});
+}
+function clr(n){return n===0?'g':REDS.has(n)?'r':'b';}
+
+// ===== 存储 =====
+var TKEY='sn_tbls',CKEY='sn_cur';
+var tbls={},curId='t1',H=[];
+function loadTbls(){
+  try{var d=localStorage.getItem(TKEY);if(d){var p=JSON.parse(d);if(p&&typeof p==='object'&&!Array.isArray(p))tbls=p;}}catch(e){tbls={};}
+  // 校验每个盘结构,剔除损坏项
+  for(var id in tbls){
+    if(!tbls[id]||typeof tbls[id]!=='object'||!Array.isArray(tbls[id].data)){delete tbls[id];}
+  }
+  if(!Object.keys(tbls).length)tbls={t1:{name:'盘1',data:[]}};
+  try{var c=localStorage.getItem(CKEY);if(c&&tbls[c])curId=c;else curId=Object.keys(tbls)[0];}catch(e){curId=Object.keys(tbls)[0];}
+  if(!tbls[curId])curId=Object.keys(tbls)[0];
+  H=tbls[curId].data||[];
+}
+function saveTbls(){
+  tbls[curId].data=H;
+  try{localStorage.setItem(TKEY,JSON.stringify(tbls));localStorage.setItem(CKEY,curId);}catch(e){alert('存储空间不足!请导出备份');}
+}
+// 导出全部盘为JSON文件
+function exportData(){
+  saveTbls();
+  var payload={version:1,exportedAt:new Date().toISOString(),tbls:tbls};
+  var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='乐嗨轮盘备份_'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+// 导入JSON文件,合并到现有盘
+function importData(input){
+  var file=input.files&&input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var obj=JSON.parse(e.target.result);
+      var imported=obj.tbls||obj; // 兼容直接是tbls对象
+      var cnt=0,skipped=0;
+      for(var id in imported){
+        var t=imported[id];
+        if(!t||!Array.isArray(t.data)){skipped++;continue;}
+        // 校验数据:只保留0-36的整数,过滤非法值
+        var clean=[];
+        for(var x=0;x<t.data.length;x++){
+          var v=parseInt(t.data[x],10);
+          if(!isNaN(v)&&v>=0&&v<=36)clean.push(v);
+        }
+        // 生成保证唯一的id(防止毫秒内冲突)
+        var newId=id;
+        if(tbls[newId]){
+          do{newId='t'+Date.now()+Math.floor(Math.random()*100000);}while(tbls[newId]);
+        }
+        tbls[newId]={name:(typeof t.name==='string'&&t.name)?t.name:'导入盘',data:clean};
+        cnt++;
+      }
+      if(cnt){
+        saveTbls();
+        alert('成功导入 '+cnt+' 个盘'+(skipped?('（跳过'+skipped+'个无效项）'):''));
+        renderTblBar();render();
+      }else{
+        alert('文件里没有有效的盘数据');
+      }
+    }catch(err){
+      alert('导入失败:文件格式不正确');
+    }
+    input.value=''; // 清空,允许重复导入同一文件
+  };
+  reader.readAsText(file);
+}
+function addTbl(){
+  var nm=document.getElementById('tbl-nm').value.trim()||('盘'+(Object.keys(tbls).length+1));
+  var id='t'+Date.now();
+  saveTbls();
+  tbls[id]={name:nm,data:[]};
+  document.getElementById('tbl-nm').value='';
+  switchTbl(id);
+}
+function delTbl(){
+  if(Object.keys(tbls).length<=1){alert('至少保留一个盘!');return;}
+  if(!confirm('确定删除当前盘?'))return;
+  delete tbls[curId];
+  curId=Object.keys(tbls)[0];
+  H=tbls[curId].data||[];
+  saveTbls();render();
+}
+function switchTbl(id){
+  saveTbls();
+  curId=id;H=tbls[id].data||[];
+  render();
+}
+function renderTblBar(){
+  document.getElementById('cur-tbl-nm').textContent=tbls[curId]?tbls[curId].name:'盘1';
+  var bar=document.getElementById('tbl-bar');
+  bar.innerHTML=Object.keys(tbls).map(function(id){
+    var t=tbls[id];
+    return '<button class="tbl-btn'+(id===curId?' on':'')+'" onclick="switchTbl(\''+id+'\')">'+t.name+' <span style="opacity:.6;font-size:10px">'+t.data.length+'</span></button>';
+  }).join('');
+}
+
+// ===== 录入 =====
+function addOne(){
+  var v=parseInt(document.getElementById('si').value);
+  if(isNaN(v)||v<0||v>36){document.getElementById('si').value='';return;}
+  H.push(v);saveTbls();
+  document.getElementById('si').value='';
+  document.getElementById('si').focus();
+  render();
+}
+function addBatch(){
+  var raw=document.getElementById('bi').value;
+  var parts=raw.split(/[\s,]+/);
+  var added=0;
+  parts.forEach(function(p){
+    var v=parseInt(p);
+    if(!isNaN(v)&&v>=0&&v<=36){H.push(v);added++;}
+  });
+  if(added){saveTbls();document.getElementById('bi').value='';render();}
+}
+function undoOne(){
+  if(H.length){H.pop();saveTbls();render();}
+}
+function clearAll(){
+  if(!confirm('确定清空当前盘所有数据?'))return;
+  H=[];saveTbls();render();
+}
+
+// ===== 推荐状态机 =====
+
+// 维护推荐状态:每次全量从头扫描H重建当前推荐状态(无状态,撤销/批量/切盘后永远正确)
+var recState=null; // {startIdx, roundCount} startIdx=触发主号在H中的索引
+function updateRecState(){
+  // 从头扫描整个H,模拟"触发->动态追号->中即停/12局"的完整过程,得到末尾的当前状态
+  recState=null;
+  var i=0;
+  var N=H.length;
+  while(i<=N-6){
+    if(chainDispersed(H,i,6)){
+      var mainIdx=i+5;        // 触发主号索引
+      // 从主号后一局开始追号
+      var roundCount=0;
+      var stopped=false;
+      var k=mainIdx+1;
+      while(k<N){
+        roundCount++;
+        var prevCover=new Set(coverSet(H,k-1)); // 上一局为中心的推荐组
+        if(prevCover.has(H[k])){stopped=true;break;}   // 命中
+        if(roundCount>=12){stopped=true;break;}          // 12局上限
+        k++;
+      }
+      if(stopped){
+        // 这一轮已结束,跳到结束位置之后继续找下一次触发
+        i=k+1;
+        recState=null;
+      }else{
+        // 数据到末尾仍在推荐期中 -> 这就是当前活动状态
+        recState={startIdx:mainIdx, roundCount:roundCount};
+        return;
+      }
+    }else{
+      i++;
+    }
+  }
+}
+
+// 实时获取当前推荐:以最新号为主号,动态重算
+function getCurrentRec(){
+  if(!recState||H.length===0)return null;
+  var mIdx=H.length-1;
+  return {
+    main:H[mIdx],
+    cover:coverSet(H,mIdx),
+    roundCount:recState.roundCount
+  };
+}
+
+// ===== 渲染 =====
+function render(){
+  renderTblBar();
+  document.getElementById('s-total').textContent=H.length;
+  updateRecState();
+  // 统计历史触发次数(连续6局散开;触发后跳过整个下注窗口,中即停或满12局)
+  var sigCount=0;
+  var ii=0;
+  while(ii<=H.length-6){
+    if(chainDispersed(H,ii,6)){
+      var mIdx=ii+5;
+      if(mIdx+1>=H.length)break; // 数据不足以看到第1局,停止
+      var hitAt=-1,trunc=false;
+      for(var kk=1;kk<=12;kk++){
+        if(mIdx+kk>=H.length){trunc=true;break;}
+        if(new Set(coverSet(H,mIdx+kk-1)).has(H[mIdx+kk])){hitAt=kk;break;}
+      }
+      if(hitAt<0&&trunc)break; // 截断未中,不计
+      sigCount++;
+      ii=mIdx+(hitAt>0?hitAt:12)+1;
+    }else ii++;
+  }
+  document.getElementById('s-sig').textContent=sigCount;
+
+  // 触发状态(只在投注盘内显示,不用单独提示框)
+  var az=document.getElementById('alert-zone');
+  var curRec=getCurrentRec();
+  if(curRec){
+    document.getElementById('s-rec').textContent='第'+(curRec.roundCount+1)+'/12局';
+  }else{
+    document.getElementById('s-rec').textContent='—';
+  }
+  if(az)az.innerHTML='';
+
+  // 最近开奖
+  var rb=document.getElementById('recent-box');
+  if(H.length){
+    var recent=H.slice(-500).reverse();
+    var arrow=recentExpanded?'▲ 收起':'▼ 展开全部('+recent.length+')';
+    var rh='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+           '<span style="font-size:12px;color:var(--dim)">最近开奖 (新→旧)</span>'+
+           '<span onclick="toggleRecent()" style="font-size:11px;color:var(--gold);cursor:pointer;padding:3px 8px;border:1px solid var(--bd);border-radius:10px">'+arrow+'</span></div>';
+    // 展开:多行换行; 收起:单行横向滚动
+    var wrapStyle=recentExpanded
+      ? 'display:flex;flex-wrap:wrap;gap:4px;max-height:220px;overflow-y:auto'
+      : 'display:flex;flex-wrap:nowrap;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px';
+    rh+='<div style="'+wrapStyle+'">';
+    recent.forEach(function(n,idx){
+      var c=clr(n);var bg=c==='g'?'var(--green)':c==='r'?'var(--red)':'#2c3e50';
+      var hl=idx<5?'border:2px solid var(--gold)':'';
+      rh+='<span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:'+bg+';color:#fff;font-weight:700;font-size:12px;flex-shrink:0;'+hl+'">'+n+'</span>';
+    });
+    rh+='</div>';
+    rb.innerHTML=rh;
+  }else{
+    rb.innerHTML='<div style="text-align:center;color:var(--dim);padding:20px">暂无数据，开始录入</div>';
+  }
+
+  renderBoard();
+}
+
+// ===== 投注盘 =====
+var recentExpanded=false;
+function toggleRecent(){recentExpanded=!recentExpanded;render();}
+var boardMode='wheel'; // 'wheel' 跑道 | 'flat' 平面盘
+function switchBoard(m){
+  boardMode=m;
+  var tw=document.getElementById('tab-wheel'),tf=document.getElementById('tab-flat');
+  if(m==='wheel'){
+    tw.style.background='var(--gold)';tw.style.color='#000';tw.style.border='none';
+    tf.style.background='var(--s3)';tf.style.color='var(--dim)';tf.style.border='1px solid var(--bd)';
+  }else{
+    tf.style.background='var(--gold)';tf.style.color='#000';tf.style.border='none';
+    tw.style.background='var(--s3)';tw.style.color='var(--dim)';tw.style.border='1px solid var(--bd)';
+  }
+  renderBoard();
+}
+
+// 推荐号样式按钮(共用)
+function _recSet(){
+  var s=new Set();
+  var r=getCurrentRec();
+  if(r)r.cover.forEach(function(n){s.add(n);});
+  return s;
+}
+function _btn(n,recSet,extra){
+  var bg=n===0?'#1a6b45':REDS.has(n)?'#b03030':'#1a1a2e';
+  var border='1px solid #2a2a4a';var anim='';
+  if(recSet.has(n)){border='2px solid #b87aff';anim='box-shadow:0 0 8px rgba(184,122,255,.7);background:rgba(139,92,246,.25);';}
+  var st='background:'+bg+';border:'+border+';'+anim+'color:#fff;font-weight:700;font-size:11px;border-radius:4px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;'+(extra||'');
+  return '<div style="'+st+'" onclick="quickAdd('+n+')">'+n+'</div>';
+}
+function _statusBar(){
+  var curRec=getCurrentRec();
+  if(curRec){
+    return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:linear-gradient(135deg,#4a1a8b,#8a4fff);border:2px solid #b87aff;text-align:center;font-size:13px;font-weight:800;color:#fff">🎯 触发推荐 · 第 '+(curRec.roundCount+1)+'/12 局 · 押紫框 '+curRec.cover.length+' 个号</div>';
+  }
+  return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:var(--s2);border:1px solid var(--bd);text-align:center;font-size:12px;color:var(--dim)">等待触发 · 最近5局链式散开时推荐</div>';
+}
+
+function renderBoard(){
+  if(boardMode==='flat')return renderFlatBoard();
+  return renderWheelBoard();
+}
+
+// ===== 跑道盘(0在上排正中) =====
+function renderWheelBoard(){
+  var el=document.getElementById('bet-board');
+  var recSet=_recSet();
+  var TOP=[29,7,28,12,35,3,26,0,32,15,19,4,21,2,25];
+  var RIGHT=[17,34,6];
+  var BOT=[31,14,20,1,33,16,24,5,10,23,8,30,11,36,13,27];
+  var LEFT=[18,22,9];
+  var h=_statusBar();
+  var cellH='height:32px;';
+  h+='<div style="display:grid;grid-template-columns:repeat(15,1fr);gap:3px;margin-bottom:3px">';
+  TOP.forEach(function(n){h+=_btn(n,recSet,cellH);});
+  h+='</div>';
+  h+='<div style="display:flex;gap:3px;margin-bottom:3px">';
+  h+='<div style="display:flex;flex-direction:column;gap:3px;width:calc((100% - 12*3px)/15)">';
+  LEFT.forEach(function(n){h+=_btn(n,recSet,'height:28px;');});
+  h+='</div>';
+  h+='<div style="flex:1;border:1px solid #2a2a4a;border-radius:6px;display:flex;align-items:center;justify-content:center;padding:4px;background:#0d1117;color:#3a4a5a;font-size:11px">点击号码可补录</div>';
+  h+='<div style="display:flex;flex-direction:column;gap:3px;width:calc((100% - 12*3px)/15)">';
+  RIGHT.forEach(function(n){h+=_btn(n,recSet,'height:28px;');});
+  h+='</div>';
+  h+='</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(16,1fr);gap:3px">';
+  BOT.forEach(function(n){h+=_btn(n,recSet,cellH);});
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+// ===== 平面盘(标准桌布:0在左,3行12列) =====
+function renderFlatBoard(){
+  var el=document.getElementById('bet-board');
+  var recSet=_recSet();
+  // 三行(从上到下): 第3行 3,6,9..36 / 第2行 2,5,8..35 / 第1行 1,4,7..34
+  var ROWS=[
+    [3,6,9,12,15,18,21,24,27,30,33,36],
+    [2,5,8,11,14,17,20,23,26,29,32,35],
+    [1,4,7,10,13,16,19,22,25,28,31,34]
+  ];
+  var h=_statusBar();
+  var cellH='height:34px;';
+  // 用flex: 左边0(占满3行高) + 右边12列网格
+  h+='<div style="display:flex;gap:3px">';
+  // 0格(竖向占满)
+  h+='<div style="width:36px;flex-shrink:0">'+_btn(0,recSet,'height:108px;font-size:15px;')+'</div>';
+  // 右侧12列x3行
+  h+='<div style="flex:1;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(3,1fr);gap:3px">';
+  ROWS.forEach(function(row){
+    row.forEach(function(n){h+=_btn(n,recSet,cellH);});
+  });
+  h+='</div>';
+  h+='</div>';
+  h+='<div style="text-align:center;color:#3a4a5a;font-size:11px;margin-top:8px">点击号码可补录</div>';
+  el.innerHTML=h;
+}
+
+// ===== 回测 =====
+function runBT(){
+  var el=document.getElementById('bt-result');
+  if(H.length<30){el.innerHTML='<span style="color:var(--r2)">数据不足(<30局),无法回测</span>';return;}
+  var N=H.length;
+  var triggers=0,h1=0,h3=0,h5=0,h8=0,h12=0,no_hit=0;
+  var dist={1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:0,11:0,12:0};
+  var streak2=0;      // 连中(>=2连)发生的次数
+  var maxStreak=0;    // 最长连中局数
+  var lastStreakIdx=-1;
+  var i=0;
+  while(i<=N-6){
+    // 检查连续6局散开(含主号) => 第i+5局触发,主号=第i+5局
+    if(chainDispersed(H,i,6)){
+      var mainIdx=i+5;
+      // 数据末尾不足以容纳完整下注窗口(至少能看到第1局)则停止统计
+      if(mainIdx+1>=N)break;
+      var hitAt=-1;
+      var truncated=false;
+      // 动态推荐: 第k局命中判定 = 是否落在"上一局(mainIdx+k-1)为主号的推荐组"里
+      for(var k=1;k<=12;k++){
+        if(mainIdx+k>=N){truncated=true;break;}
+        var cov=new Set(coverSet(H,mainIdx+k-1));
+        if(cov.has(H[mainIdx+k])){hitAt=k;break;}
+      }
+      // 截断且未命中 => 数据不足,该次不计入统计,直接结束
+      if(hitAt<0&&truncated){break;}
+      triggers++;
+      if(hitAt<0){
+        no_hit++; // 打满12局都没中=真全黑
+      }
+      else{
+        dist[hitAt]=(dist[hitAt]||0)+1;
+        if(hitAt<=1)h1++;
+        if(hitAt<=3)h3++;
+        if(hitAt<=5)h5++;
+        if(hitAt<=8)h8++;
+        if(hitAt<=12)h12++;
+        // 连中检测:命中后,以命中号为新主号继续看下一局是否还命中
+        var run=1;
+        var p=mainIdx+hitAt;
+        while(p+1<N){
+          var cov2=new Set(coverSet(H,p));
+          if(cov2.has(H[p+1])){run++;p++;}else break;
+        }
+        if(run>=2){streak2++;lastStreakIdx=mainIdx;}
+        if(run>maxStreak)maxStreak=run;
+      }
+      i=mainIdx+(hitAt>0?hitAt:12)+1;
+    }else{
+      i++;
+    }
+  }
+  var pct=function(h){return triggers?(h/triggers*100).toFixed(1)+'%':'-';};
+  var rate8=triggers?h8/triggers*100:0;
+  var verdict='',vcolor='';
+  if(triggers<10){verdict='样本太少,继续采集';vcolor='#888';}
+  else if(rate8>=95){verdict='⭐⭐⭐ 金盘! 强烈推荐';vcolor='#4caf50';}
+  else if(rate8>=90){verdict='⭐⭐ 好盘,可玩';vcolor='#8bc34a';}
+  else if(rate8>=85){verdict='⭐ 一般,谨慎';vcolor='#ffc107';}
+  else{verdict='❌ 偏低,不推荐';vcolor='#f44336';}
+  var blkRate=triggers?no_hit/triggers*100:0;
+
+  var h='<div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px">📊 盘评价: <span style="color:'+vcolor+'">'+verdict+'</span></div>';
+  h+='<div style="margin-bottom:10px;padding:8px;background:var(--s3);border-radius:6px">';
+  h+='<b>'+H.length+'局,触发'+triggers+'次</b> (平均每'+(triggers?(N/triggers).toFixed(0):'-')+'局1次)';
+  h+='</div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  h+='<tr style="color:var(--dim)"><td style="padding:3px">投到</td><td style="padding:3px;text-align:right">命中次数</td><td style="padding:3px;text-align:right">命中率</td></tr>';
+  var stats=[['第1局',h1,1],['3局内',h3,3],['5局内',h5,5],['8局内',h8,8],['12局内',h12,12]];
+  stats.forEach(function(s){
+    var rate=triggers?s[1]/triggers*100:0;
+    var color=s[2]===8?'#b87aff':'var(--txt)';
+    var bold=s[2]===8?'font-weight:700':'';
+    h+='<tr style="border-top:1px solid var(--bd)"><td style="padding:5px;color:'+color+';'+bold+'">'+s[0]+'</td><td style="padding:5px;text-align:right;color:'+color+';'+bold+'">'+s[1]+'</td><td style="padding:5px;text-align:right;color:'+color+';'+bold+'">'+rate.toFixed(1)+'%</td></tr>';
+  });
+  h+='<tr style="border-top:1px solid var(--bd)"><td style="padding:5px;color:var(--r2)">12局全黑</td><td style="padding:5px;text-align:right;color:var(--r2)">'+no_hit+'</td><td style="padding:5px;text-align:right;color:var(--r2)">'+blkRate.toFixed(1)+'%</td></tr>';
+  h+='</table>';
+  // 命中分布
+  h+='<div style="margin-top:10px;font-size:11px;color:var(--dim)">📍 首次命中分布:</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">';
+  for(var k=1;k<=12;k++){
+    if(dist[k]){
+      var d=dist[k]/triggers*100;
+      h+='<span style="padding:3px 6px;background:var(--s3);border-radius:4px;font-size:11px">第'+k+'局: '+dist[k]+'('+d.toFixed(0)+'%)</span>';
+    }
+  }
+  h+='</div>';
+  // 连中统计
+  var streakRate=triggers?streak2/triggers*100:0;
+  h+='<div style="margin-top:10px;padding:9px;background:rgba(138,79,255,.15);border-left:3px solid #8a4fff;border-radius:4px;font-size:12px;color:var(--txt);line-height:1.7">';
+  h+='🔗 <b style="color:#b87aff">连中统计</b> (开出号连续≥2局都落在推荐组)<br>';
+  h+='连中发生: <b>'+streak2+'</b> 次 · 占触发的 '+streakRate.toFixed(1)+'%<br>';
+  h+='平均每 <b>'+(streak2?(N/streak2).toFixed(0):'-')+'</b> 局出现一次连中<br>';
+  h+='最长连中: <b>'+maxStreak+'</b> 连';
+  h+='</div>';
+  h+='<div style="margin-top:10px;padding:8px;background:rgba(138,79,255,.15);border-left:3px solid #8a4fff;border-radius:4px;font-size:11px;color:var(--txt)">💡 重点看<b style="color:#b87aff">8局内命中率</b>(对应注码方案A): 8局内命中='+rate8.toFixed(1)+'%, 全黑='+blkRate.toFixed(1)+'%</div>';
+  el.innerHTML=h;
+}
+
+// 点投注盘号码=快速录入(防抖+鲁棒)
+var _qaLock=false;
+function quickAdd(n){
+  if(_qaLock)return;
+  _qaLock=true;
+  try{
+    H.push(n);
+    saveTbls();
+    render();
+  }catch(e){console.error(e);}
+  setTimeout(function(){_qaLock=false;},150);
+}
+
+// 初始化(出错也不白屏)
+try{
+  loadTbls();
+  render();
+  document.getElementById('si').focus();
+}catch(e){
+  document.body.innerHTML='<div style="padding:30px;color:#fff;font-size:14px"><h2 style="color:#ff6060">⚠️ 加载错误</h2><p>错误信息: '+e.message+'</p><p>请尝试:</p><ol style="line-height:2"><li>清除浏览器缓存</li><li>关闭重开浏览器</li><li>重新下载文件</li></ol><p><button onclick="try{localStorage.clear();location.reload();}catch(ex){}" style="padding:10px 20px;background:#d4a843;color:#000;border:none;border-radius:6px;font-weight:700">清除数据并重新加载</button></p></div>';
+}
+</script>
+
+<script>
+// 注册离线缓存（失败不影响使用）
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+</script>
+
+</body>
+</html>
