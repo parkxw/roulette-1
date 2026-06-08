@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 - 乐嗨轮盘</title>
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#08090d;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;color:#d8dae8}
+.box{background:#0f1118;border:1px solid #252836;padding:32px 28px;border-radius:16px;width:100%;max-width:360px}
+.icon{text-align:center;margin-bottom:10px}
+.icon img{width:64px;height:64px;border-radius:14px}
+h1{text-align:center;color:#d4a843;margin-bottom:6px;font-size:22px;font-weight:800}
+.subtitle{text-align:center;color:#5a5f7a;font-size:12px;margin-bottom:26px}
+.form-group{margin-bottom:14px}
+label{display:block;margin-bottom:6px;color:#5a5f7a;font-size:11px}
+input{width:100%;padding:13px;background:#1c1f2a;border:2px solid #252836;border-radius:10px;color:#d8dae8;font-size:15px;font-weight:600;outline:none}
+input:focus{border-color:#d4a843}
+button{width:100%;padding:14px;background:#d4a843;color:#000;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.message{margin-top:14px;padding:11px;border-radius:8px;font-size:12px;text-align:center;display:none;word-break:break-word}
+.message.error{background:rgba(224,82,82,.15);color:#e05252;display:block}
+.message.success{background:rgba(46,184,122,.15);color:#2eb87a;display:block}
+.adminlink{text-align:center;margin-top:18px}
+.adminlink a{color:#3a3d4a;font-size:11px;text-decoration:none}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="icon"><img src="icon-192.png" alt="logo"></div>
+    <h1>乐嗨轮盘</h1>
+    <p class="subtitle">专业轮盘数据分析工具</p>
+    <div class="form-group">
+      <label>用户名</label>
+      <input type="text" id="username" placeholder="请输入用户名" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="password" placeholder="请输入密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <button id="loginBtn" onclick="login()">进　入</button>
+    <div id="message" class="message"></div>
+    <div class="adminlink"><a href="admin.html">管理后台</a></div>
+  </div>
+
+<script>
+  const SUPABASE_URL='https://tutbopofnvehjofscnom.supabase.co';
+  const SUPABASE_KEY='sb_publishable_1GZtvCsNlQFn2Xyi5cE9_Q_Sp87vKB9';
+  const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  const msgEl=document.getElementById('message');
+  const btnEl=document.getElementById('loginBtn');
+
+  function showMsg(t,type){ msgEl.textContent=t; msgEl.className='message '+type; }
+  function devId(){ let id=localStorage.getItem('_did'); if(!id){ id='dev_'+Date.now()+'_'+Math.random().toString(36).substr(2,9); localStorage.setItem('_did',id);} return id; }
+
+  // 已登录且未过期则直接进
+  (function(){
+    try{ const a=JSON.parse(localStorage.getItem('lehai_auth')||'null');
+      if(a&&a.u&&(!a.exp||Date.now()<new Date(a.exp).getTime())){ location.replace('index.html'); } }catch(e){}
+  })();
+
+  async function login(){
+    const username=document.getElementById('username').value.trim().toLowerCase();
+    const password=document.getElementById('password').value;
+    if(!username||!password){ showMsg('请输入用户名和密码','error'); return; }
+    btnEl.disabled=true; btnEl.textContent='登录中...';
+    try{
+      const {data,error}=await sb.rpc('lehai_login',{p_username:username,p_password:password,p_device:devId()});
+      btnEl.disabled=false; btnEl.textContent='进　入';
+      if(error){ showMsg('登录失败，请检查网络后重试','error'); return; }
+      if(!data.success){ showMsg(data.error||'用户名或密码错误','error'); return; }
+      localStorage.setItem('lehai_auth', JSON.stringify({u:username, exp:data.expiry, t:Date.now()}));
+      showMsg('登录成功，正在进入...','success');
+      setTimeout(()=>{ location.replace('index.html'); },500);
+    }catch(e){
+      btnEl.disabled=false; btnEl.textContent='进　入';
+      showMsg('网络错误，请重试','error');
+    }
+  }
+</script>
+</body>
+</html>
