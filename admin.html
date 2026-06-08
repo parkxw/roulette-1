@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>乐嗨轮盘 - 管理后台</title>
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#08090d;color:#d8dae8;font-family:system-ui,'PingFang SC',sans-serif;min-height:100vh;padding:16px}
+h1{color:#d4a843;font-size:18px;text-align:center;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #252836;display:flex;justify-content:space-between;align-items:center}
+.login-box{max-width:340px;margin:80px auto;background:#0f1118;border:1px solid #252836;border-radius:16px;padding:28px}
+.login-title{color:#d4a843;font-size:16px;font-weight:700;text-align:center;margin-bottom:20px}
+input{width:100%;background:#1c1f2a;border:1px solid #252836;border-radius:8px;color:#d8dae8;font-size:14px;padding:11px;outline:none;margin-bottom:10px}
+input:focus{border-color:#d4a843}
+.btn{width:100%;background:#d4a843;color:#000;border:none;border-radius:10px;font-size:15px;font-weight:700;padding:13px;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-sm{background:#1c1f2a;border:1px solid #252836;color:#d8dae8;border-radius:7px;font-size:11px;padding:5px 10px;cursor:pointer;margin-right:4px;margin-top:4px}
+.btn-red{color:#e05252;border-color:rgba(224,82,82,.3)}
+.btn-green{color:#2eb87a;border-color:rgba(46,184,122,.3)}
+.btn-blue{color:#3d7eff;border-color:rgba(61,126,255,.3)}
+.btn-logout{background:transparent;border:1px solid rgba(224,82,82,.3);color:#e05252;border-radius:6px;font-size:11px;padding:5px 10px;cursor:pointer}
+.main{max-width:600px;margin:0 auto;display:none}
+.card{background:#0f1118;border:1px solid #252836;border-radius:12px;padding:16px;margin-bottom:12px}
+.card-title{color:#d4a843;font-size:12px;font-weight:700;margin-bottom:12px;letter-spacing:1px}
+.stat-row{display:flex;gap:8px;margin-bottom:12px}
+.stat{flex:1;background:#1c1f2a;border-radius:8px;padding:10px;text-align:center}
+.stat-num{font-size:20px;font-weight:700;color:#d4a843}
+.stat-label{font-size:10px;color:#5a5f7a;margin-top:2px}
+.code-display{background:#1c1f2a;border:2px solid #d4a843;border-radius:10px;padding:14px;margin:12px 0;display:none}
+.code-num{font-size:28px;font-weight:900;color:#d4a843;letter-spacing:4px;font-family:'Courier New',monospace;text-align:center}
+.code-info{font-size:11px;color:#5a5f7a;margin-top:5px;text-align:center}
+.user-item{background:#1c1f2a;border-radius:10px;padding:12px;margin-bottom:8px}
+.ui-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.ui-name{font-size:14px;font-weight:700;color:#d8dae8}
+.ui-info{font-size:10px;color:#5a5f7a;line-height:1.8}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700}
+.bg-green{background:rgba(46,184,122,.15);color:#2eb87a}
+.bg-red{background:rgba(224,82,82,.15);color:#e05252}
+.bg-blue{background:rgba(61,126,255,.15);color:#3d7eff}
+.msg{text-align:center;padding:8px;border-radius:8px;font-size:12px;margin-bottom:10px;display:none}
+.msg-ok{background:rgba(46,184,122,.15);color:#2eb87a}
+.msg-err{background:rgba(224,82,82,.15);color:#e05252}
+.empty{text-align:center;color:#5a5f7a;font-size:12px;padding:20px}
+.label{font-size:11px;color:#5a5f7a;margin-bottom:4px}
+.days-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<div class="login-box" id="loginBox">
+  <div class="login-title">🔒 管理员登录</div>
+  <div class="label">管理员密码</div>
+  <input type="password" id="adminPwd" placeholder="管理员密码" onkeydown="if(event.key==='Enter')adminLogin()">
+  <button class="btn" id="loginBtn" onclick="adminLogin()">登 录</button>
+  <div class="msg msg-err" id="loginErr">密码错误</div>
+</div>
+
+<div class="main" id="mainBox">
+  <h1><span>🎰 乐嗨轮盘 管理后台</span> <button class="btn-logout" onclick="logout()">退出</button></h1>
+
+  <div class="stat-row">
+    <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">总用户</div></div>
+    <div class="stat"><div class="stat-num" id="statActive" style="color:#2eb87a">0</div><div class="stat-label">有效</div></div>
+    <div class="stat"><div class="stat-num" id="statExp" style="color:#e05252">0</div><div class="stat-label">过期</div></div>
+    <div class="stat"><div class="stat-num" id="statBound" style="color:#3d7eff">0</div><div class="stat-label">已绑定</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">➕ 创建新用户</div>
+    <div class="label">用户名</div>
+    <input type="text" id="newUser" placeholder="英文/数字，例如 vip001">
+    <div class="label">备注（可选）</div>
+    <input type="text" id="newNote" placeholder="例如 张三">
+    <div class="label">有效天数</div>
+    <div class="days-row">
+      <button class="btn-sm" onclick="setDays(7)">7天</button>
+      <button class="btn-sm" onclick="setDays(30)">30天</button>
+      <button class="btn-sm" onclick="setDays(90)">90天</button>
+      <button class="btn-sm" onclick="setDays(180)">180天</button>
+      <button class="btn-sm" onclick="setDays(365)">365天</button>
+    </div>
+    <input type="number" id="newDays" placeholder="天数">
+    <button class="btn" id="createBtn" onclick="createUser()" style="margin-top:8px">🎰 创建用户并生成密码</button>
+    <div class="code-display" id="newCodeBox">
+      <div class="code-num" id="newCodeNum">--------</div>
+      <div class="code-info" id="newCodeInfo"></div>
+      <button class="btn-sm gold" onclick="copyInfo()" style="margin-top:8px;width:100%">📋 复制账号密码</button>
+    </div>
+    <div class="msg msg-ok" id="msgOk"></div>
+    <div class="msg msg-err" id="msgErr"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👥 用户列表</div>
+    <input type="text" id="searchInp" placeholder="🔍 搜索用户名/备注" oninput="filterUsers()">
+    <div id="userList"><div class="empty">加载中...</div></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://tutbopofnvehjofscnom.supabase.co';
+const SUPABASE_KEY='sb_publishable_1GZtvCsNlQFn2Xyi5cE9_Q_Sp87vKB9';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let _adm = sessionStorage.getItem('lehai_adm') || '';
+let allUsers=[];
+let _newUsername='', _newCode='';
+
+// 已登录则直接进
+if(_adm){ verifyAndShow(); }
+
+async function adminLogin(){
+  const pwd=document.getElementById('adminPwd').value;
+  const btn=document.getElementById('loginBtn');
+  const err=document.getElementById('loginErr');
+  if(!pwd){ return; }
+  btn.disabled=true; btn.textContent='验证中...'; err.style.display='none';
+  const {data,error}=await sb.rpc('lehai_admin_list',{p_admin:pwd});
+  btn.disabled=false; btn.textContent='登 录';
+  if(error || !data.success){
+    err.textContent = (data&&data.error) ? data.error : '密码错误';
+    err.style.display='block'; setTimeout(()=>err.style.display='none',3000);
+    return;
+  }
+  _adm=pwd; sessionStorage.setItem('lehai_adm',pwd);
+  showMain(data.users);
+}
+
+async function verifyAndShow(){
+  const {data,error}=await sb.rpc('lehai_admin_list',{p_admin:_adm});
+  if(error || !data.success){ _adm=''; sessionStorage.removeItem('lehai_adm'); return; }
+  showMain(data.users);
+}
+
+function showMain(users){
+  document.getElementById('loginBox').style.display='none';
+  document.getElementById('mainBox').style.display='block';
+  allUsers=users||[]; renderUsers(allUsers);
+}
+
+function logout(){ if(!confirm('确定退出?')) return; _adm=''; sessionStorage.removeItem('lehai_adm'); location.reload(); }
+
+function setDays(d){ document.getElementById('newDays').value=d; }
+
+async function reload(){
+  const {data,error}=await sb.rpc('lehai_admin_list',{p_admin:_adm});
+  if(error||!data.success){ showMsg('err','加载失败'); return; }
+  allUsers=data.users||[]; filterUsers();
+}
+
+async function createUser(){
+  const username=document.getElementById('newUser').value.trim().toLowerCase();
+  const note=document.getElementById('newNote').value.trim()||username;
+  const days=parseInt(document.getElementById('newDays').value);
+  const btn=document.getElementById('createBtn');
+  if(!username){ alert('请输入用户名'); return; }
+  if(!days||days<1){ alert('请输入有效天数'); return; }
+  let code=''; for(let i=0;i<8;i++) code+=Math.floor(Math.random()*10);
+  btn.disabled=true; btn.textContent='创建中...';
+  const {data,error}=await sb.rpc('lehai_admin_create',{p_admin:_adm,p_username:username,p_password:code,p_note:note,p_days:days});
+  btn.disabled=false; btn.textContent='🎰 创建用户并生成密码';
+  if(error||!data.success){ showMsg('err','创建失败: '+((data&&data.error)||error.message)); return; }
+  _newUsername=username; _newCode=code;
+  document.getElementById('newCodeNum').textContent=code;
+  document.getElementById('newCodeInfo').textContent='用户名: '+username+'   过期: '+new Date(data.expiry).toISOString().split('T')[0];
+  document.getElementById('newCodeBox').style.display='block';
+  document.getElementById('newUser').value=''; document.getElementById('newNote').value=''; document.getElementById('newDays').value='';
+  showMsg('ok','✓ 用户创建成功！'); reload();
+}
+
+function copyInfo(){
+  const text='用户名: '+_newUsername+'\n密码: '+_newCode;
+  if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert('已复制:\n'+text)).catch(()=>alert('请手动复制:\n'+text)); }
+  else alert('请手动复制:\n'+text);
+}
+
+function filterUsers(){
+  const q=document.getElementById('searchInp').value.toLowerCase();
+  if(!q){ renderUsers(allUsers); return; }
+  renderUsers(allUsers.filter(p=>p.username.toLowerCase().includes(q)||(p.note||'').toLowerCase().includes(q)));
+}
+
+function renderUsers(list){
+  const el=document.getElementById('userList');
+  if(!list||!list.length){ el.innerHTML='<div class="empty">暂无用户</div>'; updateStats(0,0,0,0); return; }
+  let total=0,active=0,expired=0,bound=0; const now=Date.now(); let html='';
+  list.forEach(p=>{
+    const expiry=new Date(p.expiry_at).getTime();
+    const isExp=now>expiry||!p.is_active;
+    const expDate=new Date(p.expiry_at).toISOString().split('T')[0];
+    const daysLeft=Math.ceil((expiry-now)/(864e5));
+    const last=p.last_login?new Date(p.last_login).toLocaleString('zh-CN'):'未登录';
+    total++; if(isExp) expired++; else active++; if(p.device_id) bound++;
+    html+='<div class="user-item"><div class="ui-top"><div><div class="ui-name">'+p.username;
+    if(p.note&&p.note!==p.username) html+=' <span style="color:#5a5f7a;font-size:11px">('+p.note+')</span>';
+    html+='</div></div><div style="text-align:right">';
+    if(!p.is_active) html+='<span class="badge bg-red">已停用</span>';
+    else if(now>expiry) html+='<span class="badge bg-red">已过期</span>';
+    else html+='<span class="badge bg-green">有效 '+daysLeft+'天</span>';
+    if(p.device_id) html+='<br><span class="badge bg-blue" style="margin-top:3px">已绑定</span>';
+    html+='</div></div><div class="ui-info">过期: '+expDate+'   最后在线: '+last+'</div><div style="margin-top:8px">';
+    html+='<button class="btn-sm btn-green" onclick="renewUser(\''+p.username+'\')">续期</button>';
+    if(p.is_active) html+='<button class="btn-sm btn-red" onclick="setActive(\''+p.username+'\',false)">停用</button>';
+    else html+='<button class="btn-sm btn-green" onclick="setActive(\''+p.username+'\',true)">启用</button>';
+    html+='<button class="btn-sm" onclick="resetCode(\''+p.username+'\')">重置密码</button>';
+    if(p.device_id) html+='<button class="btn-sm btn-blue" onclick="unbindUser(\''+p.username+'\')">解绑</button>';
+    html+='<button class="btn-sm btn-red" onclick="deleteUser(\''+p.username+'\')">删除</button>';
+    html+='</div></div>';
+  });
+  el.innerHTML=html; updateStats(total,active,expired,bound);
+}
+
+function updateStats(t,a,e,b){
+  document.getElementById('statTotal').textContent=t;
+  document.getElementById('statActive').textContent=a;
+  document.getElementById('statExp').textContent=e;
+  document.getElementById('statBound').textContent=b;
+}
+
+async function renewUser(u){
+  const days=prompt('续期天数 (输入正整数):','30'); if(!days) return;
+  const d=parseInt(days); if(!d||d<1){ alert('请输入有效天数'); return; }
+  const {data,error}=await sb.rpc('lehai_admin_renew',{p_admin:_adm,p_username:u,p_days:d});
+  if(error||!data.success){ showMsg('err','续期失败'); return; }
+  showMsg('ok','✓ 续期成功！'); reload();
+}
+
+async function resetCode(u){
+  if(!confirm('重置 '+u+' 的密码?')) return;
+  let code=''; for(let i=0;i<8;i++) code+=Math.floor(Math.random()*10);
+  const {data,error}=await sb.rpc('lehai_admin_reset',{p_admin:_adm,p_username:u,p_password:code});
+  if(error||!data.success){ showMsg('err','重置失败'); return; }
+  alert('✓ 密码已重置\n用户名: '+u+'\n新密码: '+code); reload();
+}
+
+async function unbindUser(u){
+  if(!confirm('解绑 '+u+' 的设备?')) return;
+  const {data,error}=await sb.rpc('lehai_admin_unbind',{p_admin:_adm,p_username:u});
+  if(error||!data.success){ showMsg('err','解绑失败'); return; }
+  showMsg('ok','✓ 设备已解绑！'); reload();
+}
+
+async function deleteUser(u){
+  if(!confirm('确定删除用户 '+u+'? (不可恢复)')) return;
+  const {data,error}=await sb.rpc('lehai_admin_delete',{p_admin:_adm,p_username:u});
+  if(error||!data.success){ showMsg('err','删除失败'); return; }
+  showMsg('ok','✓ 已删除'); reload();
+}
+
+async function setActive(u,active){
+  if(!confirm((active?'启用':'停用')+'账号 '+u+'?')) return;
+  const {data,error}=await sb.rpc('lehai_admin_active',{p_admin:_adm,p_username:u,p_active:active});
+  if(error||!data.success){ showMsg('err','操作失败'); return; }
+  showMsg('ok', active?'✓ 已启用':'✓ 已停用（最多30秒内对方被踢出）'); reload();
+}
+
+function showMsg(type,text){
+  const el=document.getElementById(type==='ok'?'msgOk':'msgErr');
+  el.textContent=text; el.style.display='block'; setTimeout(()=>el.style.display='none',4000);
+}
+</script>
+</body>
+</html>
