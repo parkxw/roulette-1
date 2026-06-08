@@ -14,7 +14,6 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-/* 登录门 */
 (function(){
   try{
     var a=JSON.parse(localStorage.getItem('lehai_auth')||'null');
@@ -817,7 +816,6 @@ try{
 
 <button onclick="lehaiLogout()" style="position:fixed;left:4px;top:4px;z-index:99999;background:rgba(0,0,0,.45);color:#d4a843;border:1px solid #d4a843;border-radius:6px;font-size:10px;padding:2px 7px;opacity:.55;cursor:pointer">退出</button>
 <script>
-/* 运行中复查: 过期/禁用/换设备踢出; 心跳记录最后在线; 30秒一次 */
 (function(){
   var URL='https://tutbopofnvehjofscnom.supabase.co';
   var KEY='sb_publishable_1GZtvCsNlQFn2Xyi5cE9_Q_Sp87vKB9';
