@@ -3,19 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <meta name="theme-color" content="#08090d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="乐嗨轮盘">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-<title>乐嗨轮盘 v3 #1779997927</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+/* 登录门 */
+(function(){
+  try{
+    var a=JSON.parse(localStorage.getItem('lehai_auth')||'null');
+    if(!a||!a.u){ location.replace('login.html'); return; }
+    if(a.exp && Date.now()>new Date(a.exp).getTime()){ localStorage.removeItem('lehai_auth'); location.replace('login.html'); return; }
+  }catch(e){ location.replace('login.html'); }
+})();
+</script>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>仟和 qianhe v3 #1779997927</title>
 <style>
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -185,7 +196,7 @@ html,body{background:var(--bg);color:var(--txt);font-family:system-ui,'PingFang 
 <div id="alert-zone"></div>
 
 <div class="inp-box">
-  <div class="inp-title" style="margin-bottom:6px">🎯 乐嗨轮盘 — <span id="cur-tbl-nm">盘1</span></div>
+  <div class="inp-title" style="margin-bottom:6px">🎯 仟和 — <span id="cur-tbl-nm">盘1</span></div>
   <div class="tbl-bar" id="tbl-bar"></div>
   <div style="display:flex;gap:5px;margin-bottom:5px">
     <input id="tbl-nm" placeholder="新盘名称" style="flex:1;min-width:0;padding:6px 9px;border-radius:7px;border:1px solid var(--bd);background:var(--s2);color:var(--txt);font-size:12px">
@@ -240,6 +251,22 @@ html,body{background:var(--bg);color:var(--txt);font-family:system-ui,'PingFang 
 </div>
 
 <script>
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  🔒 核心逻辑保护区 1 / 共2区 —— 非必要请勿修改！               ║
+   ║                                                                ║
+   ║  【仟和 qianhe 核心规则锁定版】                                    ║
+   ║  1. 触发: 连续6局"链式散开"(前5局铺垫+第6局主号也散),第6局触发  ║
+   ║     散开 = 每局都不在"上一局号"的邻域里, 且6个号互不重复        ║
+   ║     ※"不重复"只看连续6局窗口内部, 不看整条历史                 ║
+   ║  2. 邻域 = 周边7(本号+轮盘左3右3) + 平面围(桌布同横行左右)      ║
+   ║  3. 平面围: 同一横行左右相邻 (如14->11,17), 边缘号只有1个      ║
+   ║  4. 推荐组 = 主号周边7 + 主号平面围 + 过去5局号, 去重后        ║
+   ║     固定补足到14个(不足则从过去第6局往更早取,重复跳过)        ║
+   ║  5. 动态: 没中则以最新号为新主号重算推荐组; 命中即停; 12局上限 ║
+   ║                                                                ║
+   ║  修改下面任何常量/函数都会改变触发与推荐结果, 务必先备份!       ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+// ===== 🔒核心常量(锁定) =====
 var WHL=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 var REDS=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 var TABLE=[[3,6,9,12,15,18,21,24,27,30,33,36],[2,5,8,11,14,17,20,23,26,29,32,35],[1,4,7,10,13,16,19,22,25,28,31,34]];
@@ -274,9 +301,20 @@ function neighborsOf(n){
   return s;
 }
 
+/* ┌────────────────────────────────────────────────────────────┐
+   │ 🔐🔐🔐 触发逻辑专属保护 —— 绝对禁止修改！🔐🔐🔐                │
+   │                                                              │
+   │ chainDispersed 是【触发判定】的唯一核心, 决定何时开始推荐.     │
+   │ 规则(已锁定,经反复实战验证,千万不要动):                       │
+   │   · 连续6局链式散开 => 第6局触发                              │
+   │   · 每局号不在"上一局号"的邻域(周边7+平面围)里                │
+   │   · 6个号互不重复(只看窗口内,重复号隔远了不影响)              │
+   │                                                              │
+   │ 改推荐组(coverSet)/界面/统计 都跟这个函数无关, 不要碰这里!     │
+   └────────────────────────────────────────────────────────────┘ */
 // 链式散号判定:从索引i开始往后看 len 局 (i..i+len-1)
 // 规则:每一局的号 都不在 上一局号 的邻域里, 且 这些号互不重复
-// 默认 len=5 (前5局铺垫). 触发判定时用 len=6 (连主号在内连续6局都散)
+// 默认 len=5; 触发判定时用 len=6 (连主号在内连续6局都散)
 function chainDispersed(arr,i,len){
   if(len===undefined)len=5;
   if(i+len-1>=arr.length)return false;
@@ -293,6 +331,7 @@ function chainDispersed(arr,i,len){
   }
   return true;
 }
+/* └─── 🔐 触发逻辑保护结束 · 上面这个函数不要改 ───┘ */
 
 // 推荐覆盖组 = 主号(arr[i])周边7 + 主号平面围 + 过去5局开过的号, 去重
 function coverSet(arr,i){
@@ -301,8 +340,15 @@ function coverSet(arr,i){
   s.add(X);                // 主号本身 => 周边7
   tableUD(X).forEach(function(x){s.add(x);}); // 主号平面围
   for(var j=Math.max(0,i-5);j<i;j++)s.add(arr[j]); // 过去5局(不含主号自己)
+  // 固定补足到14个号: 不足则从"过去第6局"往更早取,重复跳过,直到满14个
+  var j2=i-6;
+  while(s.size<14 && j2>=0){
+    s.add(arr[j2]); // Set自动去重,重复的号加进去size不变,等于自动跳过
+    j2--;
+  }
   return [...s].sort(function(a,b){return a-b;});
 }
+/* ╚═══ 🔒 核心逻辑保护区 1 结束 ═══╝ */
 function clr(n){return n===0?'g':REDS.has(n)?'r':'b';}
 
 // ===== 存储 =====
@@ -331,7 +377,7 @@ function exportData(){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;
-  a.download='乐嗨轮盘备份_'+new Date().toISOString().slice(0,10)+'.json';
+  a.download='qianhe_备份_'+new Date().toISOString().slice(0,10)+'.json';
   document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url);
 }
@@ -434,6 +480,9 @@ function clearAll(){
 }
 
 // ===== 推荐状态机 =====
+/* ╔═══ 🔒 核心逻辑保护区 2 / 共2区 —— 非必要请勿修改！ ═══╗
+   触发判定+动态追号+中即停+12局上限的状态机. 与回测共用同一逻辑.
+   改这里会导致软件显示与回测结果不一致. 务必先备份! */
 
 // 维护推荐状态:每次全量从头扫描H重建当前推荐状态(无状态,撤销/批量/切盘后永远正确)
 var recState=null; // {startIdx, roundCount} startIdx=触发主号在H中的索引
@@ -481,6 +530,7 @@ function getCurrentRec(){
     roundCount:recState.roundCount
   };
 }
+/* ╚═══ 🔒 核心逻辑保护区 2 结束 ═══╝ */
 
 // ===== 渲染 =====
 function render(){
@@ -765,14 +815,31 @@ try{
 }
 </script>
 
+<button onclick="lehaiLogout()" style="position:fixed;left:4px;top:4px;z-index:99999;background:rgba(0,0,0,.45);color:#d4a843;border:1px solid #d4a843;border-radius:6px;font-size:10px;padding:2px 7px;opacity:.55;cursor:pointer">退出</button>
 <script>
-// 注册离线缓存（失败不影响使用）
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
-  });
-}
+/* 运行中复查: 过期/禁用/换设备踢出; 心跳记录最后在线; 30秒一次 */
+(function(){
+  var URL='https://tutbopofnvehjofscnom.supabase.co';
+  var KEY='sb_publishable_1GZtvCsNlQFn2Xyi5cE9_Q_Sp87vKB9';
+  var sb=null; try{ sb=window.supabase.createClient(URL,KEY); }catch(e){}
+  function devId(){ var id=localStorage.getItem('_did'); if(!id){ id='dev_'+Date.now()+'_'+Math.random().toString(36).substr(2,9); localStorage.setItem('_did',id);} return id; }
+  function auth(){ try{ return JSON.parse(localStorage.getItem('lehai_auth')||'null'); }catch(e){ return null; } }
+  function kick(r){ localStorage.removeItem('lehai_auth'); alert(r); location.replace('login.html'); }
+  async function check(){
+    var a=auth(); if(!a||!a.u){ location.replace('login.html'); return; }
+    if(!sb) return;
+    try{ var res=await sb.rpc('lehai_check',{p_username:a.u,p_device:devId()});
+      if(res.error) return; var d=res.data;
+      if(d && d.ok===false){ kick(d.reason||'登录已失效，请重新登录'); }
+    }catch(e){}
+  }
+  window.lehaiLogout=function(){ if(!confirm('确定退出登录?')) return; localStorage.removeItem('lehai_auth'); location.replace('login.html'); };
+  check(); setInterval(check, 30*1000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) check(); });
+})();
 </script>
-
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
 </body>
 </html>
