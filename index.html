@@ -14,13 +14,10 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-(function(){
-  try{
-    var a=JSON.parse(localStorage.getItem('lehai_auth')||'null');
-    if(!a||!a.u){ location.replace('login.html'); return; }
-    if(a.exp && Date.now()>new Date(a.exp).getTime()){ localStorage.removeItem('lehai_auth'); location.replace('login.html'); return; }
-  }catch(e){ location.replace('login.html'); }
-})();
+(function(){try{var a=JSON.parse(localStorage.getItem('lehai_auth')||'null');
+if(!a||!a.u){location.replace('login.html');return;}
+if(a.exp&&Date.now()>new Date(a.exp).getTime()){localStorage.removeItem('lehai_auth');location.replace('login.html');return;}
+}catch(e){location.replace('login.html');}})();
 </script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -150,6 +147,10 @@ html,body{background:var(--bg);color:var(--txt);font-family:system-ui,'PingFang 
 @keyframes goldglow{0%,100%{box-shadow:0 0 6px #d4a843;}50%{box-shadow:0 0 12px #d4a843,0 0 20px #d4a843;}}
 @keyframes blackflash{0%,100%{border-color:#ffffff;box-shadow:0 0 5px rgba(255,255,255,.5);}50%{border-color:#555;box-shadow:none;}}
 @keyframes goldflash{0%,100%{border-color:#d4a843;box-shadow:0 0 8px #d4a843,0 0 16px #d4a843;}50%{border-color:#a07820;box-shadow:0 0 3px #d4a843;}}
+/* 一级信号:白色闪烁(次次推荐) */
+@keyframes lv1white{0%,100%{border-color:#ffffff;box-shadow:0 0 6px rgba(255,255,255,.85);background:rgba(255,255,255,.18);}50%{border-color:#888;box-shadow:0 0 2px rgba(255,255,255,.3);background:rgba(255,255,255,.05);}}
+/* 二级信号:黄色闪烁(6局散开触发) */
+@keyframes lv2purple{0%,100%{border-color:#b87aff;box-shadow:0 0 10px #8a4fff,0 0 18px #8a4fff;background:rgba(138,79,255,.30);}50%{border-color:#6a3fbf;box-shadow:0 0 3px #8a4fff;background:rgba(138,79,255,.12);}}
 .board-wrap{padding:8px 4px}
 .board-table{width:100%;border-collapse:collapse;table-layout:fixed}
 .board-table td{border:1px solid #333;text-align:center;vertical-align:middle;cursor:pointer;font-weight:700;font-size:13px;transition:all .15s;-webkit-tap-highlight-color:transparent;position:relative}
@@ -531,6 +532,13 @@ function getCurrentRec(){
 }
 /* ╚═══ 🔒 核心逻辑保护区 2 结束 ═══╝ */
 
+// 一级信号(白色,次次推荐): 不管触发与否,永远以最新号为主号算14号推荐组
+function getLevel1Rec(){
+  if(H.length===0)return null;
+  var mIdx=H.length-1;
+  return {main:H[mIdx], cover:coverSet(H,mIdx)};
+}
+
 // ===== 渲染 =====
 function render(){
   renderTblBar();
@@ -559,9 +567,14 @@ function render(){
   var az=document.getElementById('alert-zone');
   var curRec=getCurrentRec();
   if(curRec){
-    document.getElementById('s-rec').textContent='第'+(curRec.roundCount+1)+'/12局';
+    document.getElementById('s-rec').textContent='🟣二级 第'+(curRec.roundCount+1)+'/12局';
+    document.getElementById('s-rec').style.color='#b87aff';
+  }else if(getLevel1Rec()){
+    document.getElementById('s-rec').textContent='⚪一级';
+    document.getElementById('s-rec').style.color='#ffffff';
   }else{
     document.getElementById('s-rec').textContent='—';
+    document.getElementById('s-rec').style.color='var(--b2)';
   }
   if(az)az.innerHTML='';
 
@@ -610,25 +623,41 @@ function switchBoard(m){
 }
 
 // 推荐号样式按钮(共用)
-function _recSet(){
-  var s=new Set();
-  var r=getCurrentRec();
-  if(r)r.cover.forEach(function(n){s.add(n);});
-  return s;
+// 返回当前信号: {set:推荐组, level:2黄/1白/0无}
+// 二级(黄,触发)优先; 没触发则一级(白,次次)
+function _recInfo(){
+  var r2=getCurrentRec();
+  if(r2)return {set:new Set(r2.cover), level:2};
+  var r1=getLevel1Rec();
+  if(r1)return {set:new Set(r1.cover), level:1};
+  return {set:new Set(), level:0};
 }
-function _btn(n,recSet,extra){
+function _recSet(){return _recInfo().set;}
+function _btn(n,recInfo,extra){
   var bg=n===0?'#1a6b45':REDS.has(n)?'#b03030':'#1a1a2e';
   var border='1px solid #2a2a4a';var anim='';
-  if(recSet.has(n)){border='2px solid #b87aff';anim='box-shadow:0 0 8px rgba(184,122,255,.7);background:rgba(139,92,246,.25);';}
+  if(recInfo.set.has(n)){
+    if(recInfo.level===2){ // 二级黄色闪烁
+      border='2px solid #b87aff';anim='animation:lv2purple 1s infinite;';
+    }else{ // 一级白色闪烁
+      border='2px solid #ffffff';anim='animation:lv1white 1.3s infinite;';
+    }
+  }
   var st='background:'+bg+';border:'+border+';'+anim+'color:#fff;font-weight:700;font-size:11px;border-radius:4px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;'+(extra||'');
   return '<div style="'+st+'" onclick="quickAdd('+n+')">'+n+'</div>';
 }
 function _statusBar(){
+  var info=_recInfo();
   var curRec=getCurrentRec();
-  if(curRec){
-    return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:linear-gradient(135deg,#4a1a8b,#8a4fff);border:2px solid #b87aff;text-align:center;font-size:13px;font-weight:800;color:#fff">🎯 触发推荐 · 第 '+(curRec.roundCount+1)+'/12 局 · 押紫框 '+curRec.cover.length+' 个号</div>';
+  if(curRec){ // 二级:黄色触发
+    return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:linear-gradient(135deg,#4a1a8b,#8a4fff);border:2px solid #b87aff;text-align:center;font-size:13px;font-weight:800;color:#fff;animation:lv2purple 1s infinite">🟣 二级信号·触发推荐 · 第 '+(curRec.roundCount+1)+'/12 局 · 押紫框 '+curRec.cover.length+' 个号</div>';
   }
-  return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:var(--s2);border:1px solid var(--bd);text-align:center;font-size:12px;color:var(--dim)">等待触发 · 最近5局链式散开时推荐</div>';
+  // 一级:白色,次次推荐
+  var r1=getLevel1Rec();
+  if(r1){
+    return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:var(--s2);border:2px solid #ffffff;text-align:center;font-size:12px;font-weight:700;color:#fff;animation:lv1white 1.3s infinite">⚪ 一级信号·次次推荐 · 押白框 '+r1.cover.length+' 个号 (等待二级触发)</div>';
+  }
+  return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:var(--s2);border:1px solid var(--bd);text-align:center;font-size:12px;color:var(--dim)">等待数据</div>';
 }
 
 function renderBoard(){
@@ -639,7 +668,7 @@ function renderBoard(){
 // ===== 跑道盘(0在上排正中) =====
 function renderWheelBoard(){
   var el=document.getElementById('bet-board');
-  var recSet=_recSet();
+  var recSet=_recInfo();
   var TOP=[29,7,28,12,35,3,26,0,32,15,19,4,21,2,25];
   var RIGHT=[17,34,6];
   var BOT=[31,14,20,1,33,16,24,5,10,23,8,30,11,36,13,27];
@@ -667,7 +696,7 @@ function renderWheelBoard(){
 // ===== 平面盘(标准桌布:0在左,3行12列) =====
 function renderFlatBoard(){
   var el=document.getElementById('bet-board');
-  var recSet=_recSet();
+  var recSet=_recInfo();
   // 三行(从上到下): 第3行 3,6,9..36 / 第2行 2,5,8..35 / 第1行 1,4,7..34
   var ROWS=[
     [3,6,9,12,15,18,21,24,27,30,33,36],
@@ -823,21 +852,16 @@ try{
   function devId(){ var id=localStorage.getItem('_did'); if(!id){ id='dev_'+Date.now()+'_'+Math.random().toString(36).substr(2,9); localStorage.setItem('_did',id);} return id; }
   function auth(){ try{ return JSON.parse(localStorage.getItem('lehai_auth')||'null'); }catch(e){ return null; } }
   function kick(r){ localStorage.removeItem('lehai_auth'); alert(r); location.replace('login.html'); }
-  async function check(){
-    var a=auth(); if(!a||!a.u){ location.replace('login.html'); return; }
+  async function check(){ var a=auth(); if(!a||!a.u){ location.replace('login.html'); return; }
     if(!sb) return;
     try{ var res=await sb.rpc('lehai_check',{p_username:a.u,p_device:devId()});
-      if(res.error) return; var d=res.data;
-      if(d && d.ok===false){ kick(d.reason||'登录已失效，请重新登录'); }
-    }catch(e){}
+      if(res.error) return; var d=res.data; if(d&&d.ok===false){ kick(d.reason||'登录已失效，请重新登录'); } }catch(e){}
   }
   window.lehaiLogout=function(){ if(!confirm('确定退出登录?')) return; localStorage.removeItem('lehai_auth'); location.replace('login.html'); };
   check(); setInterval(check, 30*1000);
   document.addEventListener('visibilitychange',function(){ if(!document.hidden) check(); });
 })();
 </script>
-<script>
-if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
-</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 </body>
 </html>
