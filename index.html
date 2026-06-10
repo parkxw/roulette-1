@@ -3,6 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#08090d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="仟和轮盘">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+(function(){try{var a=JSON.parse(localStorage.getItem('lehai_auth')||'null');
+if(!a||!a.u){location.replace('login.html');return;}
+if(a.exp&&Date.now()>new Date(a.exp).getTime()){localStorage.removeItem('lehai_auth');location.replace('login.html');return;}
+}catch(e){location.replace('login.html');}})();
+</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -132,9 +148,9 @@ html,body{background:var(--bg);color:var(--txt);font-family:system-ui,'PingFang 
 @keyframes blackflash{0%,100%{border-color:#ffffff;box-shadow:0 0 5px rgba(255,255,255,.5);}50%{border-color:#555;box-shadow:none;}}
 @keyframes goldflash{0%,100%{border-color:#d4a843;box-shadow:0 0 8px #d4a843,0 0 16px #d4a843;}50%{border-color:#a07820;box-shadow:0 0 3px #d4a843;}}
 /* 一级信号:白色闪烁(次次推荐) */
-@keyframes lv1white{0%,100%{border-color:#ffffff;box-shadow:0 0 6px rgba(255,255,255,.9);}50%{border-color:#888;box-shadow:0 0 2px rgba(255,255,255,.3);}}
-/* 二级信号:紫色闪烁(6局散开触发) */
-@keyframes lv2purple{0%,100%{border-color:#b87aff;box-shadow:0 0 10px #8a4fff,0 0 18px #8a4fff;}50%{border-color:#6a3fbf;box-shadow:0 0 3px #8a4fff;}}
+@keyframes lv1white{0%,100%{border-color:#ffffff;box-shadow:0 0 6px rgba(255,255,255,.85);background:rgba(255,255,255,.18);}50%{border-color:#888;box-shadow:0 0 2px rgba(255,255,255,.3);background:rgba(255,255,255,.05);}}
+/* 二级信号:黄色闪烁(6局散开触发) */
+@keyframes lv2purple{0%,100%{border-color:#b87aff;box-shadow:0 0 10px #8a4fff,0 0 18px #8a4fff;background:rgba(138,79,255,.30);}50%{border-color:#6a3fbf;box-shadow:0 0 3px #8a4fff;background:rgba(138,79,255,.12);}}
 .board-wrap{padding:8px 4px}
 .board-table{width:100%;border-collapse:collapse;table-layout:fixed}
 .board-table td{border:1px solid #333;text-align:center;vertical-align:middle;cursor:pointer;font-weight:700;font-size:13px;transition:all .15s;-webkit-tap-highlight-color:transparent;position:relative}
@@ -634,12 +650,12 @@ function _statusBar(){
   var info=_recInfo();
   var curRec=getCurrentRec();
   if(curRec){ // 二级:黄色触发
-    return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:linear-gradient(135deg,#4a1a8b,#8a4fff);border:2px solid #b87aff;text-align:center;font-size:13px;font-weight:800;color:#fff;animation:lv2purple 1s infinite">🟣 二级信号·触发推荐 · 第 '+(curRec.roundCount+1)+'/12 局 · 押紫框 '+curRec.cover.length+' 个号</div>';
+    return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:linear-gradient(135deg,#4a1a8b,#8a4fff);border:2px solid #b87aff;text-align:center;font-size:13px;font-weight:800;color:#fff;animation:lv2purple 1s infinite">第 '+(curRec.roundCount+1)+'/12 局</div>';
   }
   // 一级:白色,次次推荐
   var r1=getLevel1Rec();
   if(r1){
-    return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:var(--s2);border:2px solid #ffffff;text-align:center;font-size:12px;font-weight:700;color:#fff;animation:lv1white 1.3s infinite">⚪ 一级信号·次次推荐 · 押白框 '+r1.cover.length+' 个号 (等待二级触发)</div>';
+    return '';
   }
   return '<div style="margin-bottom:8px;padding:9px;border-radius:8px;background:var(--s2);border:1px solid var(--bd);text-align:center;font-size:12px;color:var(--dim)">等待数据</div>';
 }
@@ -827,5 +843,25 @@ try{
 }
 </script>
 
+<button onclick="lehaiLogout()" style="position:fixed;left:4px;top:4px;z-index:99999;background:rgba(0,0,0,.45);color:#d4a843;border:1px solid #d4a843;border-radius:6px;font-size:10px;padding:2px 7px;opacity:.55;cursor:pointer">退出</button>
+<script>
+(function(){
+  var URL='https://tutbopofnvehjofscnom.supabase.co';
+  var KEY='sb_publishable_1GZtvCsNlQFn2Xyi5cE9_Q_Sp87vKB9';
+  var sb=null; try{ sb=window.supabase.createClient(URL,KEY); }catch(e){}
+  function devId(){ var id=localStorage.getItem('_did'); if(!id){ id='dev_'+Date.now()+'_'+Math.random().toString(36).substr(2,9); localStorage.setItem('_did',id);} return id; }
+  function auth(){ try{ return JSON.parse(localStorage.getItem('lehai_auth')||'null'); }catch(e){ return null; } }
+  function kick(r){ localStorage.removeItem('lehai_auth'); alert(r); location.replace('login.html'); }
+  async function check(){ var a=auth(); if(!a||!a.u){ location.replace('login.html'); return; }
+    if(!sb) return;
+    try{ var res=await sb.rpc('lehai_check',{p_username:a.u,p_device:devId()});
+      if(res.error) return; var d=res.data; if(d&&d.ok===false){ kick(d.reason||'登录已失效，请重新登录'); } }catch(e){}
+  }
+  window.lehaiLogout=function(){ if(!confirm('确定退出登录?')) return; localStorage.removeItem('lehai_auth'); location.replace('login.html'); };
+  check(); setInterval(check, 30*1000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) check(); });
+})();
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 </body>
 </html>
