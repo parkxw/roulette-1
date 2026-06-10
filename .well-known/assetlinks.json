@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.dayu.roulette",
+    "sha256_cert_fingerprints": ["3E:13:C0:08:FB:B7:27:0F:9C:BA:87:F6:B8:C2:30:D0:F8:36:D7:DF:E8:E1:89:8A:59:54:AC:D4:A7:85:1E:A2"]
+  }
+}]
