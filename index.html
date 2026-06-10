@@ -214,8 +214,9 @@ html,body{background:var(--bg);color:var(--txt);font-family:system-ui,'PingFang 
     <button onclick="clearAll()" style="white-space:nowrap;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:var(--r2);font-size:12px">清空</button>
   </div>
   <div style="display:flex;gap:5px;margin-top:5px">
-    <button onclick="exportData()" style="flex:1;white-space:nowrap;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:var(--g2);font-size:12px">⬇ 导出备份</button>
-    <button onclick="document.getElementById('import-file').click()" style="flex:1;white-space:nowrap;padding:6px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:#b87aff;font-size:12px">⬆ 导入数据</button>
+    <button onclick="exportCurrent()" style="flex:1;white-space:nowrap;padding:6px 6px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:var(--g2);font-size:11px">⬆ 导出当前盘</button>
+    <button onclick="document.getElementById('import-file').click()" style="flex:1;white-space:nowrap;padding:6px 6px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:#b87aff;font-size:11px">⬇ 导入数据</button>
+    <button onclick="exportData()" style="flex:1;white-space:nowrap;padding:6px 6px;border:1px solid var(--bd);border-radius:7px;background:var(--s3);color:var(--g2);font-size:11px">📦 导出全部盘</button>
     <input id="import-file" type="file" accept=".json,application/json" onchange="importData(this)" style="display:none">
   </div>
 </div>
@@ -378,6 +379,22 @@ function exportData(){
   var a=document.createElement('a');
   a.href=url;
   a.download='qianhe_备份_'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+// 导出当前选中的单个盘(格式与全量备份一致, 可被"导入数据"合并导入)
+function exportCurrent(){
+  saveTbls();
+  var t=tbls[curId];
+  if(!t){alert('当前没有选中的盘');return;}
+  var one={};one[curId]=t;
+  var payload={version:1,exportedAt:new Date().toISOString(),tbls:one};
+  var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  var safeName=(t.name||'盘').replace(/[\\/:*?"<>|]/g,'_');
+  a.download='大禹_'+safeName+'_'+new Date().toISOString().slice(0,10)+'.json';
   document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url);
 }
