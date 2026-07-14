@@ -22,7 +22,7 @@ if(a.exp&&Date.now()>new Date(a.exp).getTime()){localStorage.removeItem('lehai_a
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>大禹 qianhe v3 #1779997927</title>
+<title>大禹14</title>
 <style>
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -61,6 +61,12 @@ html,body{background:var(--bg);color:var(--txt);font-family:system-ui,'PingFang 
 
 /* RECENT */
 .recent{background:var(--s1);padding:6px 8px;border-bottom:1px solid var(--bd);overflow-y:auto;max-height:160px}
+/* 最近开奖：最新号 + 历史同号 白框持续闪烁 */
+@keyframes wflash{
+  0%,100%{box-shadow:0 0 0 2px #fff,0 0 10px 2px rgba(255,255,255,.85);}
+  50%    {box-shadow:0 0 0 2px rgba(255,255,255,.18),0 0 0 0 rgba(255,255,255,0);}
+}
+.wflash{animation:wflash 1.6s ease-in-out infinite;}
 .recent::-webkit-scrollbar{display:none}
 .rl{font-size:9px;color:var(--dim);white-space:nowrap;flex-shrink:0}
 .rc{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
@@ -196,7 +202,7 @@ html,body{background:var(--bg);color:var(--txt);font-family:system-ui,'PingFang 
 <div id="alert-zone"></div>
 
 <div class="inp-box">
-  <div class="inp-title" style="margin-bottom:6px">🎯 大禹 — <span id="cur-tbl-nm">盘1</span></div>
+  <div class="inp-title" style="margin-bottom:6px">🎯 大禹14 — <span id="cur-tbl-nm">盘1</span></div>
   <div class="tbl-bar" id="tbl-bar"></div>
   <div style="display:flex;gap:5px;margin-bottom:5px">
     <input id="tbl-nm" placeholder="新盘名称" style="flex:1;min-width:0;padding:6px 9px;border-radius:7px;border:1px solid var(--bd);background:var(--s2);color:var(--txt);font-size:12px">
@@ -255,7 +261,7 @@ html,body{background:var(--bg);color:var(--txt);font-family:system-ui,'PingFang 
 /* ╔══════════════════════════════════════════════════════════════╗
    ║  🔒 核心逻辑保护区 1 / 共2区 —— 非必要请勿修改！               ║
    ║                                                                ║
-   ║  【仟和 qianhe 核心规则锁定版】                                    ║
+   ║  【大禹14 核心规则锁定版】                                         ║
    ║  1. 触发: 连续6局"链式散开"(前5局铺垫+第6局主号也散),第6局触发  ║
    ║     散开 = 每局都不在"上一局号"的邻域里, 且6个号互不重复        ║
    ║     ※"不重复"只看连续6局窗口内部, 不看整条历史                 ║
@@ -378,7 +384,7 @@ function exportData(){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;
-  a.download='qianhe_备份_'+new Date().toISOString().slice(0,10)+'.json';
+  a.download='大禹14_备份_'+new Date().toISOString().slice(0,10)+'.json';
   document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url);
 }
@@ -608,10 +614,13 @@ function render(){
       ? 'display:flex;flex-wrap:wrap;gap:4px;max-height:220px;overflow-y:auto'
       : 'display:flex;flex-wrap:nowrap;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px';
     rh+='<div style="'+wrapStyle+'">';
+    var newest=recent[0];   // 最新开出的号
     recent.forEach(function(n,idx){
       var c=clr(n);var bg=c==='g'?'var(--green)':c==='r'?'var(--red)':'#2c3e50';
       var hl=idx<5?'border:2px solid var(--gold)':'';
-      rh+='<span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:'+bg+';color:#fff;font-weight:700;font-size:12px;flex-shrink:0;'+hl+'">'+n+'</span>';
+      // 最新号 + 之前开过的同一数字 → 白框一直闪
+      var cls=(n===newest)?' class="wflash"':'';
+      rh+='<span'+cls+' style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:'+bg+';color:#fff;font-weight:700;font-size:12px;flex-shrink:0;position:relative;z-index:1;'+hl+'">'+n+'</span>';
     });
     rh+='</div>';
     rb.innerHTML=rh;
